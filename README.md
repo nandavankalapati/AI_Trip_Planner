@@ -1,0 +1,1 @@
+postgresql://nanda:v7dQW22XCZGvoqUzsGDaoti5RZr0lkpx@dpg-d969ehhkh4rs73dfa510-a.oregon-postgres.render.com/agentmemory_ima1
