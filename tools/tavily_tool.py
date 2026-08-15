@@ -27,7 +27,3 @@ def tavily_search(query):
     
     return "\n\n".join(results)
 
-a=tavily_search("yesterday cricket match india vs england winner ?")
-
-print(a)
-
