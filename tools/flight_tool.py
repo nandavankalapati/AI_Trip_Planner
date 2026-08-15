@@ -257,7 +257,7 @@ def resolve_location_to_iata(location: str):
 
     # Exact city match from airport database
     city_matches = []
-
+    
     for iata, airport in AIRPORTS.items():
         city = str(airport.get("city", "")).lower().strip()
         name = str(airport.get("name", "")).lower().strip()
@@ -286,11 +286,8 @@ def resolve_location_to_iata(location: str):
 
 
 
-
+#Finds country or city names inside a natural language query.
 def find_location_mentions(query: str):
-    """
-    Finds country or city names inside a natural language query.
-    """
 
     q = query.lower()
     mentions = []
