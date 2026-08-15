@@ -48,31 +48,29 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY
           script: |
-            # 1. Install dependencies on EC2 if missing
+            # 1. Ensure required CLI tools exist
             which aws || (sudo apt-get update && sudo apt-get install -y awscli)
             which jq || (sudo apt-get update && sudo apt-get install -y jq)
 
             # 2. Log in to ECR
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-            # 3. Pull latest secrets directly from AWS Secrets Manager into an env file
+            # 3. Pull secrets directly using jq from AWS CLI JSON output
             aws secretsmanager get-secret-value \
               --secret-id ai-trip/production \
               --region $AWS_REGION \
-              --query SecretString \
-              --output text > /tmp/ai-trip-secret.json
+              --output json | jq -r '.SecretString' | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/ai-trip.env
+            
+            chmod 600 /tmp/ai-trip.env
 
-            jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/ai-trip-secret.json > /tmp/ai-trip.env
-            chmod 600 /tmp/ai-trip.env /tmp/ai-trip-secret.json
-
-            # 4. Pull latest Docker container image
+            # 4. Pull latest Docker image
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            # 5. Stop existing container
+            # 5. Stop and remove existing container
             docker stop ai-trip || true
             docker rm ai-trip || true
 
-            # 6. Launch new container with environment file attached
+            # 6. Run container with environment file
             docker run -d \
               --name ai-trip \
               --restart unless-stopped \
@@ -80,6 +78,5 @@ jobs:
               -p 8000:8000 \
               $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            # 7. Clean up raw JSON file and unused Docker images
-            rm -f /tmp/ai-trip-secret.json
+            # 7. Clean up dangling images
             docker image prune -f
